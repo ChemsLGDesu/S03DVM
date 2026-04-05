@@ -7,27 +7,25 @@ public class PlayerController : MonoBehaviour
     public InputSystem_Actions inputs;
     private CharacterController controller;
 
-
+    public float walkSpeed = 5.00f;
+    public float runSpeed = 9.00f;
+    public float rotationSpeed = 200f;
+    private float currentSpeed;
 
     public float moveSpeed = 5f;
-    public float rotationSpeed = 200f;
     public float verticalVelocity = 0;
     public float jumpForce = 10;
-
     public float pushForce = 4;
 
-    private bool IsDashing;
-    public float dashForce;
+    public float dashForce = 20.00f;
     public float dashDuration = 0.2f;
     private float dashTimer;
-
+    private bool IsDashing;
 
 
 
     [SerializeField]private Vector2 moveInput;
-
-
-
+    private bool isRunning;
 
     private void Awake()
     {
@@ -44,9 +42,10 @@ public class PlayerController : MonoBehaviour
 
         inputs.Player.Jump.performed += OnJump;
 
-        inputs.Player.Sprint.performed += OnDash;
+        inputs.Player.Sprint.performed += ctx => isRunning = true;
+        inputs.Player.Sprint.canceled += ctx => isRunning = false;
 
-        
+        inputs.Player.Sprint.performed += OnDash;
 
     }
     void Start()
@@ -60,41 +59,45 @@ public class PlayerController : MonoBehaviour
         //OnSimpleMove();
     }
 
+    private void OnDisable() => inputs.Disable();
     public void OnMove()
     {
+        
         transform.Rotate(Vector3.up * moveInput.x * rotationSpeed * Time.deltaTime);
-        Vector3 moveDir = transform.forward * moveSpeed * moveInput.y;
+
+        
+        currentSpeed = isRunning ? runSpeed : walkSpeed;
+        Vector3 moveDir = transform.forward * currentSpeed * moveInput.y;
+
+        
+        if (controller.isGrounded && verticalVelocity < 0)
+            verticalVelocity = -2.00f;
 
         verticalVelocity += Physics.gravity.y * Time.deltaTime;
-
-        if(controller.isGrounded && verticalVelocity < 0)
-            verticalVelocity = -2f;
-
-
         moveDir.y = verticalVelocity;
 
-        if(IsDashing)
+        
+        if (IsDashing)
         {
-            //->convertir el dash a un barrido por el piso! dash con gravedad integrada omaegoto!
-            moveDir = transform.forward * dashForce * (dashTimer/dashDuration) ;
+            
+            float dashMultiplier = dashTimer / dashDuration;
+            Vector3 dashMove = transform.forward * dashForce * dashMultiplier;
+
+            moveDir.x = dashMove.x;
+            moveDir.z = dashMove.z;
 
             dashTimer -= Time.deltaTime;
-
-            if(dashTimer <= 0)
-                IsDashing = false;
+            if (dashTimer <= 0) IsDashing = false;
         }
 
-
-
-
+        
         controller.Move(moveDir * Time.deltaTime);
     }
 
     private void OnJump(InputAction.CallbackContext context)
     {
-        if (!controller.isGrounded) return;
-
-        verticalVelocity = jumpForce;
+        if (controller.isGrounded)
+            verticalVelocity = jumpForce;
     }
     public void OnSimpleMove()
     {
@@ -104,8 +107,6 @@ public class PlayerController : MonoBehaviour
     }
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        
-
         Vector3 pushDir = (hit.transform.position - transform.position).normalized;
 
         if (hit.rigidbody != null && hit.rigidbody.linearVelocity == Vector3.zero)
@@ -116,8 +117,24 @@ public class PlayerController : MonoBehaviour
     }
     private void OnDash(InputAction.CallbackContext context)
     {
-        IsDashing = true;
-        dashTimer = dashDuration;
+        if (!IsDashing)
+        {
+            IsDashing = true;
+            dashTimer = dashDuration;
+        }
     }
 
+    private void OnDrawGizmos()
+    {
+        if (controller == null) return;
+
+        // Dirección del movimiento (Azul)
+        Gizmos.color = Color.blue;
+        Gizmos.DrawRay(transform.position + Vector3.up, transform.forward * 2.00f);
+
+        // Velocidad Vertical (Verde)
+        Gizmos.color = Color.green;
+        // Dibujamos una línea que sube o baja según la velocidad vertical actual
+        Gizmos.DrawLine(transform.position + Vector3.up, transform.position + Vector3.up + (Vector3.up * verticalVelocity * 0.50f));
+    }
 }
