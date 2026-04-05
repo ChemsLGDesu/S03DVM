@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
-    public float lifeTime = 5.00f;
+    public float lifeTime = 7f;
     void Start()
     {
         Destroy(gameObject, lifeTime);

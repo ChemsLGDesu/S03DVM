@@ -4,7 +4,7 @@ public class CannonController : MonoBehaviour
 {
     public GameObject projectilePrefab;
     public Transform firePoint;
-    public Vector3 fireDirection = new Vector3(0, 0, 1.00f);
+    public Vector3 fireDirection = new Vector3(0, 0, 1f);
     public float shootForce = 20.00f;
     public float fireRate = 2.00f;
 
