@@ -6,41 +6,63 @@ public class EnemySimpleController : MonoBehaviour
     public Transform Target;
     private NavMeshAgent agentEnemy;
 
+    public float detectionRange = 10f;
+    public float stopDistance = 1.50f;
     void Start()
     {
         agentEnemy = GetComponent<NavMeshAgent>();
-        Target = GameObject.FindGameObjectWithTag("Humanoid").transform;
+        
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Humanoid");
+        if (playerObj != null) Target = playerObj.transform;
 
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (Target != null && agentEnemy.isOnNavMesh)
+        if (agentEnemy != null)
         {
-            agentEnemy.SetDestination(Target.position);
-
             agentEnemy.speed = Random.Range(2f, 4f);
             agentEnemy.acceleration = Random.Range(5f, 10f);
-            agentEnemy.stoppingDistance = Random.Range(1f, 3f);
-            agentEnemy.avoidancePriority = Random.Range(0, 99);
-            agentEnemy.angularSpeed = Random.Range(0, 120);
+            agentEnemy.stoppingDistance = stopDistance;
         }
     }
 
+    void Update()
+    {
+        if (Target == null || !agentEnemy.isOnNavMesh) return;
+
+        float distanceToPlayer = Vector3.Distance(transform.position, Target.position);
+
+        if (distanceToPlayer <= detectionRange)
+        {
+            agentEnemy.isStopped = false;
+            agentEnemy.SetDestination(Target.position);
+        }
+        else
+        {
+            agentEnemy.isStopped = true;
+        }
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Humanoid"))
+        {
+            Debug.Log("Enemigo alcanzó al jugador y vuela alto.");
+            Destroy(gameObject);
+        }
+    }
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
+
         if (agentEnemy == null || agentEnemy.path == null) return;
 
+        Gizmos.color = Color.red;
         Vector3[] corners = agentEnemy.path.corners;
 
+        if (corners.Length < 2) return;
 
         for (int i = 0; i < corners.Length - 1; i++)
         {
             Gizmos.DrawLine(corners[i], corners[i + 1]);
-            Gizmos.DrawSphere(corners[i], 0.2f);
+            Gizmos.DrawSphere(corners[i], 0.20f);
         }
-
     }
 }
