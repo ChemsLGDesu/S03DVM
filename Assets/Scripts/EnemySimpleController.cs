@@ -25,6 +25,10 @@ public class EnemySimpleController : MonoBehaviour
 
     void Update()
     {
+        DistancePlayer();
+    }
+    public void DistancePlayer()
+    {
         if (Target == null || !agentEnemy.isOnNavMesh) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, Target.position);
